@@ -7,8 +7,7 @@ class sample(object):
 
 
 	
-	def __init__(self,id,path,buffer_size=1024):
-		self.id = id
+	def __init__(self,path,buffer_size=1024):
 		self.path = path
 		
 		"""
@@ -64,9 +63,3 @@ class sample(object):
 	def play(self):
 		p = subprocess.Popen(['mpg123','-q', self.path])		
 		
-				
-	
-
-		
- 
-
