@@ -12,15 +12,15 @@ class player(object):
         self.sounds = {}
         self.nn_state = {}
         self.last_played = {}
-        self.refactory = 2.0
-        self.threshold = 0.4 
+        self.refactory = 0.0
+        self.threshold = 0.0 
 
 
     def update_state(self,nn):
         self.nn_state = nn
 
     def play(self):
-        print self.nn_state
+        # print self.nn_state
         for key in self.nn_state:
             if self.nn_state[key] >= self.threshold:
                 self.play_sample(key)
@@ -48,26 +48,26 @@ def make_random_nn():
     return ann
 
 
-
-p = player()
-
-
-p.add_sound(0,'Sounds/BIO/01 - B.mp3')
-p.add_sound(1,'Sounds/BIO/02 - B.mp3')
-p.add_sound(2,'Sounds/BIO/03 - B.mp3')
-p.add_sound(3,'Sounds/BIO/04 - B.mp3')
-p.add_sound(4,'Sounds/MECH/01 - M.mp3')
-p.add_sound(5,'Sounds/MECH/02 - M.mp3')
-p.add_sound(6,'Sounds/MECH/03 - M.mp3')
+if __name__=="__main__":
+    p = player()
 
 
+    p.add_sound(0,'Sounds/BIO/01 - B.mp3')
+    p.add_sound(1,'Sounds/BIO/02 - B.mp3')
+    p.add_sound(2,'Sounds/BIO/03 - B.mp3')
+    p.add_sound(3,'Sounds/BIO/04 - B.mp3')
+    p.add_sound(4,'Sounds/MECH/01 - M.mp3')
+    p.add_sound(5,'Sounds/MECH/02 - M.mp3')
+    p.add_sound(6,'Sounds/MECH/03 - M.mp3')
 
-while True:
 
-    p.update_state(make_random_nn())
-    p.play()
-    
-    time.sleep(0.5)
+
+    while True:
+
+        p.update_state(make_random_nn())
+        p.play()
+        
+        time.sleep(0.5)
 
 
 

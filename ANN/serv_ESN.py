@@ -39,7 +39,7 @@ class serv_ESN():
 		state, output, this = self.stepper(
 		val_in, self.outputs, 0.)
 
-		return state, output, this
+		return state, output
 
 
 	#do what

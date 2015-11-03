@@ -1,6 +1,6 @@
-import alsaaudio
-from wave import open as waveOpen
-import pyaudio
+# import alsaaudio
+# from wave import open as waveOpen
+# import pyaudio
 import subprocess
 
 class sample(object):
@@ -61,5 +61,6 @@ class sample(object):
 		return (data, pyaudio.paContinue)
 	"""	
 	def play(self):
+		# print self.path
 		p = subprocess.Popen(['mpg123','-q', self.path])		
 		

@@ -69,18 +69,18 @@ angular.module('webApp')
         socket_test.forward('xbee', $scope);
         $scope.$on('socket:ann', function (ev, data) {
             if (data.from != "ann" && data.from != "front"){
-                // console.log(data);
+                console.log(data);
                 socket_test.emit("ann",data);
                 
             }
             //we can put sync here to change all together
         });
         $scope.$on('socket:music', function (ev, data) {
-            if (data.from != "music" && data.from != "front"){
+            // if (data.from != "music" && data.from != "front"){
                 // console.log(data);
-                socket_test.emit("music",data);
+            socket_test.emit("music",data);
                 
-            }
+            // }
             //we can put sync here to change all together
         });
         $scope.$on('socket:xbee', function (ev, data) {
