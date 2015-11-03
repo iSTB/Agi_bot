@@ -7,7 +7,7 @@ from flask import Flask, render_template
 from flask.ext.socketio import SocketIO, emit
 
 class serv_ESN():
-	def __init__(self, webapp):
+	def __init__(self,):
 		weight_scale = 1.#.8
 		weight_inp = .2
 		weight_fb = 10**(-3)
@@ -23,11 +23,11 @@ class serv_ESN():
 			units, indim, outdim, weight_scale,weight_inp,weight_fb, alpha, fback
 			)
 		
-		self.webapp = webapp
+		# self.webapp = webapp
 		
-		self.stepper = esn.step_taped()
-		self.outputs = np.zeros(outdim)
-
+		self.stepper = self.esn.step_taped()
+		self.outputs = np.zeros((3,outdim))
+		print "ESN:: init"
 	def serv_close(self,):
 		return True
 
@@ -37,13 +37,10 @@ class serv_ESN():
 	def serv_step(self, val_in):
 		
 		state, output, this = self.stepper(
-		inputs, self.outputs, 0.)
+		val_in, self.outputs, 0.)
 
 		return state, output, this
 
-@ws.on('ann', namespace='/control_background')
-def bg_ann_ctrl(socket_data):
-	#from who
 
 	#do what
 

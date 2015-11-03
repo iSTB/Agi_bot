@@ -31,7 +31,7 @@ angular.module('webApp')
             });
         };
     })
-    .controller('RobotServerCtrl', function ($scope, socket) {
+    .controller('RobotServerCtrl', function ($scope, socket, socket_test) {
         //notifications manage
         toastr.options = {
           "closeButton": false,
@@ -64,10 +64,41 @@ angular.module('webApp')
             toastr.info(data);
             //we can put sync here to change all together
         });
-        
+        socket_test.forward('ann', $scope);
+        socket_test.forward('music', $scope);
+        socket_test.forward('xbee', $scope);
+        $scope.$on('socket:ann', function (ev, data) {
+            if (data.from != "ann" && data.from != "front"){
+                // console.log(data);
+                socket_test.emit("ann",data);
+                
+            }
+            //we can put sync here to change all together
+        });
+        $scope.$on('socket:music', function (ev, data) {
+            if (data.from != "music" && data.from != "front"){
+                // console.log(data);
+                socket_test.emit("music",data);
+                
+            }
+            //we can put sync here to change all together
+        });
+        $scope.$on('socket:xbee', function (ev, data) {
+            socket_test.emit("xbee",data);
+            //we can put sync here to change all together
+        });
         $scope.ann_switch = function(){
             socket.emit('ann',{
                     data: $scope.ann_on
+                });
+            var data;
+            if ($scope.ann_on){
+                data = "close"
+            }else
+                data = "init"
+            socket_test.emit('ann',{
+                    from: "front",
+                    data: data
                 });
             $scope.ann_on = !$scope.ann_on;
             

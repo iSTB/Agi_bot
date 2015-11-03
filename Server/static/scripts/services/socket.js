@@ -7,4 +7,11 @@ angular.module('webApp')
         });
         socket.forward('error');
         return socket;
+    })
+    .factory('socket_test', function (socketFactory) {
+        var socketa = socketFactory({
+            ioSocket: io.connect('/control_background')
+        });
+        socketa.forward('error');
+        return socketa;
     });
