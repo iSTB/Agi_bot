@@ -243,7 +243,10 @@ def bg_music_ctrl(socket_data):
                 music.add_sound(6,'../Sampler/Sounds/MECH/03 - M.mp3')
 
                 while music_thread is not None:
-                    music.play()
+                    try:
+                        music.play()
+                    except Exception:
+                        break
                     sleep(1)
 
             if music_thread is None:
