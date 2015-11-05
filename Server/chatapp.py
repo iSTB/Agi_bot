@@ -1,6 +1,6 @@
 #server
 from gevent import monkey, sleep
-monkey.patch_all(thread=False)
+monkey.patch_all()
 
 import flask
 from flask import Flask, render_template
