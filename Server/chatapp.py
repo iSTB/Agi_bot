@@ -1,4 +1,6 @@
 #server
+from gevent import monkey
+monkey.patch_all()
 
 import flask
 from flask import Flask, render_template
@@ -8,14 +10,13 @@ from flask.ext.socketio import SocketIO, emit
 from Agi_bot.ANN.serv_ESN import serv_ESN 
 from Agi_bot.Sampler.player import player 
 from Agi_bot.XBEE.XBee_Threaded import XBee 
-from gevent import monkey
-monkey.patch_all()
 #os
 from datetime import datetime
 import os
 import numpy as np
 from time import sleep
 from threading import Thread
+
 
 
 app = Flask(__name__)
