@@ -1,6 +1,8 @@
 #server
 from gevent import monkey
 monkey.patch_all()
+import subprocess
+subprocess._has_poll = False
 
 import flask
 from flask import Flask, render_template
