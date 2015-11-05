@@ -138,7 +138,7 @@ def xbee_contorl(data):
             )
         emit('notification', "XBEE started.",
          namespace='/control', broadcast=True)
-        print "XBEE:: OFF"
+        print "XBEE:: ON"
 ######################################################################BACK
 ######################ANN
 @ws.on('ann', namespace='/control_background')
