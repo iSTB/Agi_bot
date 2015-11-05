@@ -1,16 +1,22 @@
+#server
 from gevent import monkey
 monkey.patch_all()
 
 import flask
 from flask import Flask, render_template
 from flask.ext.socketio import SocketIO, emit
-from datetime import datetime
-import os
+
+#engine
 from Agi_bot.ANN.serv_ESN import serv_ESN 
 from Agi_bot.Sampler.player import player 
+from Agi_bot.XBEE.XBee_Threaded import XBee 
+#os
+from datetime import datetime
+import os
 import numpy as np
 from time import sleep
 from threading import Thread
+
 
 app = Flask(__name__)
 app.config.from_pyfile('config.py')
@@ -21,7 +27,6 @@ xbee = None
 thread = None
 music = None
 music_thread = None
-last_messages = []
 
 
 @app.route('/')
@@ -285,7 +290,13 @@ def bg_xbee_ctrl(socket_data):
     if socket_data['from'] == "ann":
         if socket_data['data'] != None:
             #received sensors
-            print "XBEE:: ann com"#, socket_data['data'] 
+            print "XBEE:: ann com"#, socket_data['data']
+
+            #send data to the xbee
+            if xbee is not None:
+                xbee.Send(
+                    bytearray.fromhex("7e 7d 11 13 5b 01 01 01 01 01 01 01"))
+
         else:
             #invalid
             emit(
@@ -315,27 +326,35 @@ def bg_xbee_ctrl(socket_data):
         pass
     elif socket_data['from'] == "front":
         if socket_data['data'] == "init" and xbee == None and ann != None:
-            xbee = 1
+            # xbee = 1
+            xbee = XBee("COM3")
             @flask.copy_current_request_context
             def xbee_thread():
                 while thread is not None:
                     sleep(1)
-                    package = {
-                        "from":"xbee",
-                        "data": np.random.random((3,6)).tolist()
-                        }
+                    #send msg
+                    msg = xbee.Receive()
+                    if msg:
+                        content = msg[7:-1]
+                        print xbee.format(content)
+                        package = {
+                            "from":"xbee",
+                            "data": np.random.random((3,6)).tolist()
+                            }
 
-                    emit(
-                        'ann',
-                        package,
-                        namespace='/control_background'
-                        )
+                        emit(
+                            'ann',
+                            package,
+                            namespace='/control_background'
+                            )
+
             if thread is None:
                 thread = Thread(target=xbee_thread)
                 thread.start()
             print "XBEE:: front com init"
             return True
         elif socket_data['data'] == "close" and xbee != None:
+            xbee.shutdown()
             xbee = None        
             thread.join(1)
             thread = None
