@@ -7,7 +7,7 @@ from flask import Flask, render_template
 from flask.ext.socketio import SocketIO, emit
 
 #engine
-from Agi_bot.ANN.serv_ESN import serv_ESN 
+# from Agi_bot.ANN.serv_ESN import serv_ESN 
 from Agi_bot.Sampler.player import player 
 from Agi_bot.XBEE.XBee_Threaded import XBee 
 #os
