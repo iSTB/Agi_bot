@@ -43,23 +43,24 @@ class XBee():
         # 9 bytes is Minimum length to be a valid Rx frame
         #  LSB, MSB, Type, Source Address(2), RSSI,
         #  Options, 1 byte data, checksum
-        if (len(msg) - msg.count(bytes(b'0x7D'))) < 9:
-            return False
+        # if (len(msg) - msg.count(bytes(b'0x7D'))) < 9:
+        #     return False
 
         # All bytes in message must be unescaped before validating content
-        frame = self.Unescape(msg)
+        # frame = self.Unescape(msg)
 
-        LSB = frame[1]
-        # Frame (minus checksum) must contain at least length equal to LSB
-        if LSB > (len(frame[2:]) - 1):
-            return False
+        # LSB = frame[1]
+        # # Frame (minus checksum) must contain at least length equal to LSB
+        # if LSB > (len(frame[2:]) - 1):
+        #     return False
 
-        # Validate checksum
-        if (sum(frame[2:3+LSB]) & 0xFF) != 0xFF:
-            return False
+        # # Validate checksum
+        # if (sum(frame[2:3+LSB]) & 0xFF) != 0xFF:
+        #     return False
 
-        print("Rx: " + self.format(bytearray(b'\x7E') + msg))
-        self.RxMessages.append(frame)
+        # print("Rx: " + self.format(bytearray(b'\x7E') + msg))
+        self.RxMessages.append(msg)
+        print msg
         return True
 
     def SendStr(self, msg, addr=0xFFFF, options=0x01, frameid=0x00):
@@ -74,7 +75,7 @@ class XBee():
         Returns:
           Number of bytes sent
         """
-        return self.Send(msg.encode('utf-8'), addr, options, frameid)
+        return self.Send(msg.encode('ascii'), addr, options, frameid)
 
     def Send(self, msg, addr=0xFFFF, options=0x01, frameid=0x00):
         """

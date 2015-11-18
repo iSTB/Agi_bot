@@ -12,7 +12,7 @@ class player(object):
         self.sounds = {}
         self.nn_state = {}
         self.last_played = {}
-        self.refactory = 0.0
+        self.refactory = 10
         self.threshold = 0.0 
 
 
@@ -23,8 +23,10 @@ class player(object):
         # print self.nn_state
         for key in self.nn_state:
             if self.nn_state[key] >= self.threshold:
-                self.play_sample(key)
-                    
+                try:
+                    self.play_sample(key)
+                except:
+                    print "Music player: dont have a sound:", key                    
 
     def add_sound(self,id,path):
         sound = sample(path)        

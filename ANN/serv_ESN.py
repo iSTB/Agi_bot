@@ -17,7 +17,7 @@ class serv_ESN():
 		padding_s = 300
 		units = 28*28
 		indim = 6
-		outdim = 5
+		outdim = 6
 
 		self.esn = ESN(
 			units, indim, outdim, weight_scale,weight_inp,weight_fb, alpha, fback
@@ -38,7 +38,7 @@ class serv_ESN():
 		
 		state, output, this = self.stepper(
 		val_in, self.outputs, 0.)
-
+		output += np.random.random(output.shape)
 		return state, output
 
 

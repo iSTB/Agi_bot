@@ -15,19 +15,19 @@ class XBee(threading.Thread):
 
     def __init__(self, serialport):
         threading.Thread.__init__(self)
-        self.serial = serial.Serial(port=serialport, baudrate=9600, timeout=0)
+        self.serial = serial.Serial(port=serialport, baudrate=9600)
         self.start()
 
     def shutdown(self):
         self.stop.set()
-        self.join()
+        self.join(1)
 
     def run(self):
         while not self.stop.is_set():
             self.Rx()
             sleep(0.01)
 
-    def Receive(self, wait=5):
+    def Receive(self, wait=0.3):
         """
         Checks receive queue for messages
 
@@ -48,21 +48,17 @@ class XBee(threading.Thread):
          formatted XBee API message.
         """
         if self.serial.inWaiting():
-            remaining = self.serial.inWaiting()
-            while remaining > 0:
-                chunk = self.serial.read(remaining)
-                remaining -= len(chunk)
-                self.rxbuff.extend(chunk)
-
-            msgs = self.rxbuff.split(bytes(b'\x7E'))
-            for msg in msgs[:-1]:
-                self.Validate(msg)
-
-            if self.Validate(msgs[-1]):
-                self.rxbuff = bytearray()
-            else:
-                self.rxbuff = msgs[-1]
-
+            self.rxbuff = self.serial.readline()
+            msg = self.rxbuff.decode("utf-8")
+            try:
+                msg = [int(x) for x in msg.split(",")]
+                # print msg
+                if len(msg) == 6 or len(msg)==1:
+                    #we have a proper responce
+                    self.RxQ.put(msg)
+            except Exception:
+                return True
+           
     def SendStr(self, msg, addr=0xFFFF, options=0x01, frameid=0x00):
         """
         Inputs:
@@ -76,7 +72,7 @@ class XBee(threading.Thread):
             Message sent to XBee; stripped of start delimeter,
             MSB, LSB, and checksum; formatted into a readable string
         """
-        return self.Send(msg.encode('utf-8'), addr, options, frameid)
+        return self.Send(msg.encode('ascii'), addr, options, frameid)
 
     def Send(self, msg, addr=0xFFFF, options=0x01, frameid=0x00):
         """
@@ -112,7 +108,9 @@ class XBee(threading.Thread):
         # Escape any bytes containing reserved characters
         frame = self.Escape(frame)
 
-        print("Tx: " + self.format(frame))
+        # print("Tx: " + self.format(frame))
+        frame = msg
+        print("Tx: " + msg)
         return self.serial.write(frame)
 
     def Validate(self, msg):
@@ -121,30 +119,35 @@ class XBee(threading.Thread):
             properly formatted XBee message.  If validated, returns
             received message
         """
-        # 10 bytes is Minimum length to be Rx message
-        #  Src LSB, RSSI, Options, 1 byte data, checksum
-        if len(msg) < 9:
+        msg = msg.decode("utf-8")
+        print msg
+        msg = self.check(msg)
+        if msg:
+            self.RxQ.put(msg)
+        else:
             return False
-
-        # All bytes in message must be unescaped.
-        #  Only exception is the start delimiter at the beginning
-        frame = self.Unescape(msg)
-        if not frame:
-            return False
-
-        LSB = frame[1]
-        # Frame (minus checksum) must contain at least length of LSB
-        if LSB > (len(frame[2:]) - 1):
-            return False
-
-        # Validate checksum
-        if (sum(frame[2:3+LSB]) & 0xFF) != 0xFF:
-            return False
-
-        self.RxQ.put(frame)
-        print("Rx: " + self.format(msg))
         return True
+    def check(self, msg):
+        #When msg is a singular unicode int. 
+        msg = msg.split(',')
+        if len(msg) == 1:
+            try:
+                msg = [int(x.strip('\n').strip('\r')) for x in msg] 
+                if msg[0] == 1 or msg[0]==0:
+                    return msg[0]
+            except:
+                return None
+            # else: 
 
+        if len(msg) == 6:
+            try:
+                msg = [int(x.strip('\n').strip('\r')) for x in msg]
+                return msg 
+            except:
+                return None
+            # else: 
+
+        return None
     def Unescape(self, msg):
         """
         Helper function to unescaped an XBee API message.

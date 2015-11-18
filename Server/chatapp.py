@@ -1,15 +1,15 @@
 #server
 from gevent import monkey
 monkey.patch_all()
-import subprocess
-subprocess._has_poll = False
+# import subprocess
+# subprocess._has_poll = False
 
 import flask
 from flask import Flask, render_template
 from flask.ext.socketio import SocketIO, emit
 
 #engine
-# from Agi_bot.ANN.serv_ESN import serv_ESN 
+from Agi_bot.ANN.serv_ESN import serv_ESN 
 from Agi_bot.Sampler.player import player 
 from Agi_bot.XBEE.XBee_Threaded import XBee 
 #os
@@ -27,6 +27,9 @@ ws = SocketIO(app)
 # cs = SocketIO()
 ann = None
 xbee = None
+status = ['a','b','c','d','e','f']
+xbee_motors_on = ['A','B','C','D','E','F']
+xbee_motors_off = ['a','b','c','d','e','f']
 thread = None
 music = None
 music_thread = None
@@ -150,8 +153,11 @@ def bg_ann_ctrl(socket_data):
     #from who
     if socket_data['from'] == "xbee":
         if socket_data['data'] != None and ann is not None:
-            #received sensors
-            state, output = ann.serv_step(socket_data['data'])
+            #received sensors, norm between [0,1]
+            normed = (np.array(socket_data['data'])-6)/250.
+            sen = (normed*2.)-1.
+            print sen
+            state, output = ann.serv_step(sen)
             state = state.tolist()
             output = output.tolist()
             package = {
@@ -227,9 +233,9 @@ def bg_music_ctrl(socket_data):
 
     if socket_data['from'] == "ann" and music is not None:
         state = {}
-        for i, v in enumerate(socket_data['data'][0][34:47]):
-            state[i%6] = v
-        print state
+        for i, v in enumerate(socket_data['data'][0]):#[34:47]):
+            state[i] = v
+        #print state
         music.update_state(state)
         print "MUSIC:: from ann com "#, socket_data['data']
     elif socket_data['from'] == "xbee" and music is not None:
@@ -242,14 +248,30 @@ def bg_music_ctrl(socket_data):
             @flask.copy_current_request_context            
             def m_thread():
                 global music
-                music.add_sound(0,'../Sampler/Sounds/BIO/01 - B.mp3')
-                music.add_sound(1,'../Sampler/Sounds/BIO/02 - B.mp3')
-                music.add_sound(2,'../Sampler/Sounds/BIO/03 - B.mp3')
-                music.add_sound(3,'../Sampler/Sounds/BIO/04 - B.mp3')
-                music.add_sound(4,'../Sampler/Sounds/MECH/01 - M.mp3')
-                music.add_sound(5,'../Sampler/Sounds/MECH/02 - M.mp3')
-                music.add_sound(6,'../Sampler/Sounds/MECH/03 - M.mp3')
+                cur_index = 0
 
+
+                #bio_sounds = os.listdir('../Sampler/Sounds/BIO')
+                bio_sounds = ['../Sampler/Sounds/BIO/' + x for x in os.listdir('../Sampler/Sounds/BIO')]
+
+                #mech_sounds = os.listdir('../Sampler/Sounds/MECH')
+                mech_sounds = ['../Sampler/Sounds/MECH/' + x for x in os.listdir('../Sampler/Sounds/MECH')]
+
+                all_sounds = bio_sounds + mech_sounds
+
+                for i,sound in enumerate(all_sounds):                
+                    music.add_sound(i,sound)
+
+
+
+                #music.add_sound(0,'../Sampler/Sounds/BIO/01 - B.mp3')
+                #music.add_sound(1,'../Sampler/Sounds/BIO/02 - B.mp3')
+                #music.add_sound(2,'../Sampler/Sounds/BIO/03 - B.mp3')
+                #music.add_sound(3,'../Sampler/Sounds/BIO/04 - B.mp3')
+                #music.add_sound(4,'../Sampler/Sounds/MECH/01 - M.mp3')
+                #music.add_sound(5,'../Sampler/Sounds/MECH/02 - M.mp3')
+                #music.add_sound(6,'../Sampler/Sounds/MECH/03 - M.mp3')
+                #music.add_soun
                 while music_thread is not None:
                     try:
                         music.play()
@@ -289,16 +311,23 @@ def bg_music_ctrl(socket_data):
 def bg_xbee_ctrl(socket_data):
     global xbee
     global thread
+    global status
+    global xbee_motors_on
+    global xbee_motors_off
     #from who
     if socket_data['from'] == "ann":
         if socket_data['data'] != None:
             #received sensors
             print "XBEE:: ann com"#, socket_data['data']
-
             #send data to the xbee
+            nsat = ['a','b','c','d','e','f']
             if xbee is not None:
-                xbee.Send(
-                    bytearray.fromhex("7e 7d 11 13 5b 01 01 01 01 01 01 01"))
+                for idx,value in enumerate(socket_data['data'][0]):
+                    print "\t motor val:", value, " |id:",idx," ", xbee_motors_on[idx]
+                    if value >= 0.0:
+                        xbee.SendStr(xbee_motors_on[idx])
+                    else:
+                        xbee.SendStr(xbee_motors_off[idx])
 
         else:
             #invalid
@@ -330,26 +359,36 @@ def bg_xbee_ctrl(socket_data):
     elif socket_data['from'] == "front":
         if socket_data['data'] == "init" and xbee == None and ann != None:
             # xbee = 1
-            xbee = XBee("COM3")
+            xbee = XBee("/dev/ttyUSB0")
+            #xbee.run()
             @flask.copy_current_request_context
             def xbee_thread():
-                while thread is not None:
-                    sleep(1)
+                while (thread is not None):
+                    # sleep(1)
                     #send msg
-                    msg = xbee.Receive()
-                    if msg:
-                        content = msg[7:-1]
-                        print xbee.format(content)
-                        package = {
-                            "from":"xbee",
-                            "data": np.random.random((3,6)).tolist()
-                            }
+                    msg = None
+                    while msg is None:
+                        try:
+                            xbee.SendStr('0')
+                            msg = xbee.Receive()
+                            # print "MSG ",msg
+                        except Exception:
+                            break
+                        if msg:
+                            if len(msg) == 1:
+                                #we have a signle digit response
+                                continue
+                            package = {
+                                "from":"xbee",
+                                "data": [msg]
+                                }
 
-                        emit(
-                            'ann',
-                            package,
-                            namespace='/control_background'
-                            )
+                            emit(
+                                'ann',
+                                package,
+                                namespace='/control_background'
+                                )
+                        sleep(0.5)
 
             if thread is None:
                 thread = Thread(target=xbee_thread)
@@ -357,10 +396,13 @@ def bg_xbee_ctrl(socket_data):
             print "XBEE:: front com init"
             return True
         elif socket_data['data'] == "close" and xbee != None:
-            xbee.shutdown()
-            xbee = None        
             thread.join(1)
             thread = None
+            for _ in xrange(5):
+                xbee.SendStr('1')
+                sleep(0.5)
+            xbee.shutdown()
+            xbee = None        
             print "XBEE:: front com close"
             return True
         elif socket_data['data'] == "emit" and xbee != None:
