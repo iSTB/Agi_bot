@@ -52,7 +52,7 @@ def test(sys, weight_scale, weight_inp, weight_fb, alpha, inital_washout, paddin
 	stepper = esn.step_taped()
 	
 	dtsets = read_dataset(sys.argv[1], sys.argv[2])
-	# import pdb;pdb.set_trace()
+	import pdb;pdb.set_trace()
 	inputs, outputs, padIdxs, idxs = dtsets[0]
 
 	
