@@ -12,18 +12,11 @@ def train(idxs, padIdxs, esn, stepper, inputs, outputs):
 		print "with pad, from: ",pad[0]," to ",pad[1]
 		state, output, this = stepper(
 			inputs[pad[0]:pad[1],:], outputs[pad[0]:pad[1],:], 0.)
-		# plot_state.extend(state[:,:units])
-		# plot_output.extend(output)
 		
-
 		print "with val, from: ",val[0]," to ",val[1]
 		for _ in xrange(10):
 			state, output, this = stepper(
 			inputs[val[0]:val[1],:], outputs[val[0]:val[1],:], 1.)
-
-		# plot_state.extend(state[:,:units])
-		# plot_output.extend(outputs[val[0]:val[1],:])
-
 		##apply washout
 		state = state[inital_washout:]
 		this = this[inital_washout:]
@@ -31,17 +24,17 @@ def train(idxs, padIdxs, esn, stepper, inputs, outputs):
 		all_states.extend(state)
 		all_this.extend(this)
 		# import pdb;pdb.set_trace()
-		err = np.mean((outputs[val[0]:val[1]-1,:] - output)**2,0)
+		err = np.mean((outputs[val[0]:val[1]-2,:] - output)**2,0)
 		# err_sum +=err
 		
 		# print len(plot_output)
 
-	# M_tonos = np.linalg.pinv(all_states)
+	M_tonos = np.linalg.pinv(all_states)
 	# import pdb; pdb.set_trace()
-	# all_this = np.arctanh(all_this)
-	# W_trans = np.dot(M_tonos,all_this)
-	# esn.W_out.set_value(W_trans)
-	# print W_trans
+	all_this = np.arctanh(all_this)
+	W_trans = np.dot(M_tonos,all_this)
+	esn.W_out.set_value(W_trans)
+	print W_trans
 	
 		# print err_sum
 	return err
@@ -50,42 +43,19 @@ def test(sys, weight_scale, weight_inp, weight_fb, alpha, inital_washout, paddin
 
 	units = 28*28
 	indim = 6
-	outdim = 5
-	# weight_scale = 1.
-	# weight_inp = .4
-	# weight_fb = .00001
-	# alpha = .2
-	# fback = True#False
-	# inital_washout = 120#80
-	# padding_s = 100
-
+	outdim = 6
+	
 	esn = ESN(
 		units, indim, outdim, weight_scale,weight_inp,weight_fb, alpha, fback
 		)
 
 	stepper = esn.step_taped()
-	# runner = esn.run()
-	# w_update = esn.update_weights()
-	##data
-	# steps = 300
-	# zeros = np.zeros((steps,indim))
-	# lnspace = np.linspace(-np.pi, np.pi, 100, False)
-	# lnspace = np.tile(lnspace, steps/100)
-	# zeros[:,0] = .5*np.sin(lnspace)
-	# inputs = np.append(zeros, np.zeros(200)).reshape(500,1)
-	# inputs = np.append(inputs,np.random.random((steps,indim))).reshape((2*steps,indim))
 	
 	dtsets = read_dataset(sys.argv[1], sys.argv[2])
-	inputs, _, idxs, padIdxs = make_train_set(
-		dtsets[1:], 0, 0, padding_s #[dtsets[0],dtsets[2]]
-		)
-	
-	outputs = np.zeros((idxs[-1][1],outdim))-.5
-	for i, n in enumerate(idxs):
-		# outputs[n[0]:n[1],0] = (i%5)/5.
-		# if n != idxs[-1]:
-		outputs[n[0]:n[1],((i)%5)] = .5
 	# import pdb;pdb.set_trace()
+	inputs, outputs, padIdxs, idxs = dtsets[0]
+
+	
 	plot_output =[]
 	plot_state =[]
 
@@ -96,46 +66,25 @@ def test(sys, weight_scale, weight_inp, weight_fb, alpha, inital_washout, paddin
 	###########END TRAIN
 	print "Time taken ", time.time() - start
 	#########TESTING#############
-	# outputs = np.zeros((idxs[-1],1))
-	inputs, _, idxs, padIdxs = make_train_set(
-		dtsets, 0, 0, padding_s
-		)
 	
-	outputs = np.zeros((idxs[-1][1],outdim)) 
-	for i, n in enumerate(idxs):
-		# outputs[n[0]:n[1],0] = (i%5)/5.
-		outputs[n[0]:n[1],((i)%5)] = .6
-
 	state, output, this = stepper(
-		inputs, outputs, 0.)
+		inputs, outputs, 0)
 
-	
+	print output.shape
 	plot_state.extend(state[:,:units])
 	plot_output.extend(output)
 
-	success = np.zeros(output.shape[1])
-	length = np.zeros(output.shape[1])
-	for i_l,i_id in enumerate(idxs):
-		length[(i_l%5)] += i_id[1] - i_id[0]
-	for i_op, op in enumerate(output):
-		for i_el, el in enumerate(zip(idxs,padIdxs)):
-			if i_op in range(el[0][0],el[0][1]):
-				if np.argmax(op) == (i_el%5):
-					success[(i_el%5)] +=1
-	print "Success: ",success, length
-	print "Success %: ", success/length
-		# np.append(output, outputs[:-2]).reshape(
-		# outputs.shape[0],outputs.shape[1]+output.shape[1]))
-	print len(plot_output)
-	# import pdb;pdb.set_trace()
-	#########TESTING#############
-
 	
+	#########TESTING#############
 	if int(sys.argv[3]) == 1:
 		f, axarr = plt.subplots(3, sharex=True)
-		axarr[0].plot(plot_output,label="output")
+		for oid,tpt in enumerate(np.array(plot_output).transpose()):
+			try:
+				axarr[0].plot(tpt,label="output"+str(oid))
+			except:
+				pass
 		axarr[0].set_title('output')
-		# axarr[0].legend()
+		axarr[0].legend()
 		axarr[1].plot(plot_state,label="state")
 		axarr[1].set_title('state')
 		# axarr[1].legend()
@@ -143,21 +92,25 @@ def test(sys, weight_scale, weight_inp, weight_fb, alpha, inital_washout, paddin
 		axarr[2].set_title('inputs')
 		# axarr[2].legend()
 		# plt.draw()
+		plt.figure()
+		plt.plot(inputs)
+		# plt.figure()
+		plt.plot(outputs)
 		plt.show()
 	
-	return success/length
+	return True
 
 
 
 if __name__=="__main__":
 
 	weight_scale = 1.#.8
-	weight_inp = .2
+	weight_inp = 1.
 	weight_fb = 10**(-3)
 	alpha = .99#.35#.2
 	fback = False#False
-	inital_washout = 100#100
-	padding_s = 300
+	inital_washout = 50#100
+	padding_s = 10#300
 	stats = test(
 		sys, weight_scale, weight_inp, weight_fb,
 		 alpha, inital_washout, padding_s )
