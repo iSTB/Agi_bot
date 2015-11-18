@@ -252,12 +252,12 @@ def bg_music_ctrl(socket_data):
 
 
                 #bio_sounds = os.listdir('../Sampler/Sounds/BIO')
-                bio_sounds = ['../Sampler/Sounds/BIO/' + x for x in os.listdir('../Sampler/Sounds/BIO')]
+                conf_sounds = ['../Sampler/Sounds/DRONE SOUNDS/Confident/' + x for x in os.listdir('../Sampler/Sounds/DRONE SOUNDS/Confident')]
+                rel_sounds = ['../Sampler/Sounds/DRONE SOUNDS/Relaxed/' + x for x in os.listdir('../Sampler/Sounds/DRONE SOUNDS/Relaxed')]
+                fear_sounds = ['../Sampler/Sounds/DRONE SOUNDS/Fearful/' + x for x in os.listdir('../Sampler/Sounds/DRONE SOUNDS/Fearful')]
 
-                #mech_sounds = os.listdir('../Sampler/Sounds/MECH')
-                mech_sounds = ['../Sampler/Sounds/MECH/' + x for x in os.listdir('../Sampler/Sounds/MECH')]
 
-                all_sounds = bio_sounds + mech_sounds
+                all_sounds = conf_sounds +rel_sounds+fear_sounds
 
                 for i,sound in enumerate(all_sounds):                
                     music.add_sound(i,sound)
