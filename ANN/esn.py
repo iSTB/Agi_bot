@@ -28,7 +28,7 @@ class ESN():
 		self.W_in = theano.shared(
 				scaleI*(
 					scipy.sparse.rand(
-							self.in_dim, self.units, density=.5)
+							self.in_dim, self.units, density=.9)
 				).todense().astype(theano.config.floatX)
 				)
 

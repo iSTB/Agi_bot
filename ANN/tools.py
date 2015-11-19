@@ -133,3 +133,16 @@ def read_dataset(dirname, extension):
             # save and close
             f.close()
     return returnables
+def createPad(size):
+    padding = []
+    lin_size = 20
+    
+    lnspace = np.linspace(np.pi, -lin_size*np.pi, size, False)
+    for _ in xrange( 6):
+        sign = 1. if np.random.random(1)>.5 else -1.
+        padding.append(
+            sign*np.random.random()*np.sin(lnspace)
+            )
+
+    padding = np.array(padding).transpose()
+    return padding

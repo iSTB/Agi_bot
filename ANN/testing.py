@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from esn import ESN
-from tools import read_dataset, make_train_set,sig
+from tools import read_dataset, make_train_set,sig,createPad
 import sys
 def train(idxs, padIdxs, esn, stepper, inputs, outputs):
 	all_states = []
@@ -9,13 +9,19 @@ def train(idxs, padIdxs, esn, stepper, inputs, outputs):
 	for i, pv in enumerate(zip(padIdxs,idxs)):
 		pad, val = pv
 		
-		print "with pad, from: ",pad[0]," to ",pad[1]
+		randompad = createPad(100)
+
 		state, output, this = stepper(
-			inputs[pad[0]:pad[1],:], outputs[pad[0]:pad[1],:], 0.)
+				randompad, randompad, 0.)
+		
+		if (pad[1]-pad[0])!=0:
+			print "with pad, from: ",pad[0]," to ",pad[1]
+			state, output, this = stepper(
+				inputs[pad[0]:pad[1],:], outputs[pad[0]:pad[1],:], 0.)
 		
 		print "with val, from: ",val[0]," to ",val[1]
-		for _ in xrange(10):
-			state, output, this = stepper(
+		# for _ in xrange(10):
+		state, output, this = stepper(
 			inputs[val[0]:val[1],:], outputs[val[0]:val[1],:], 1.)
 		##apply washout
 		state = state[inital_washout:]
@@ -52,7 +58,7 @@ def test(sys, weight_scale, weight_inp, weight_fb, alpha, inital_washout, paddin
 	stepper = esn.step_taped()
 	
 	dtsets = read_dataset(sys.argv[1], sys.argv[2])
-	import pdb;pdb.set_trace()
+	# import pdb;pdb.set_trace()
 	inputs, outputs, padIdxs, idxs = dtsets[0]
 
 	
@@ -107,8 +113,8 @@ if __name__=="__main__":
 	weight_scale = 1.#.8
 	weight_inp = 1.
 	weight_fb = 10**(-3)
-	alpha = .99#.35#.2
-	fback = False#False
+	alpha = .1#.35#.2
+	fback = True#False
 	inital_washout = 50#100
 	padding_s = 10#300
 	stats = test(
