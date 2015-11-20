@@ -5,6 +5,7 @@ from tools import read_dataset, make_train_set,sig
 import sys
 from flask import Flask, render_template
 from flask.ext.socketio import SocketIO, emit
+import os 
 
 class serv_ESN():
 	def __init__(self,):
@@ -24,7 +25,8 @@ class serv_ESN():
 			)
 		
 		# self.webapp = webapp
-		
+		local_dir = os.path.dirname(__file__)
+		self.esn.load(local_dir+"/trainied.pickle")
 		self.stepper = self.esn.step_taped()
 		self.outputs = np.zeros((3,outdim))
 		print "ESN:: init"

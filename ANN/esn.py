@@ -10,6 +10,9 @@ np.random.seed(0xbeef)
 rng = RandomStreams(seed=np.random.randint(1 << 30))
 # theano.config.warn.subtensor_merge_bug = False
 
+def r(asd):
+	return asd
+
 class ESN():
 	def __init__(self,N,K,L,scale,scaleI,scaleFb,alpha,fback = False):
 		self.units = N
@@ -28,7 +31,7 @@ class ESN():
 		self.W_in = theano.shared(
 				scaleI*(
 					scipy.sparse.rand(
-							self.in_dim, self.units, density=.5)
+							self.in_dim, self.units, density=1.)
 				).todense().astype(theano.config.floatX)
 				)
 
@@ -46,8 +49,9 @@ class ESN():
 		if fback:
 			self.W_fb = theano.shared(
 				scaleFb*(
-					self.get_weights(
-						size=(self.units,self.out_dim),low=-1., high=1.).astype(theano.config.floatX))
+					scipy.sparse.rand(
+							self.units, self.out_dim, density=.1)
+				).todense().astype(theano.config.floatX)
 				)
 		else:
 			self.W_fb = theano.shared(
@@ -65,8 +69,6 @@ class ESN():
 		self.T = TT.matrix()
 		self.f = TT.tanh
 
-		def r(asd):
-			return asd
 		self.g = r
 
 
@@ -124,7 +126,20 @@ class ESN():
 		# c=theano.printing.Print("dinv")(dinv)
 		return theano.function(inputs=[self.input, self.d, self.coef], outputs=[self.state_z, self.output, dinv])
 	
+	def save(self, filename):
+		import pickle
+		f= open(filename, "wb")
+		pickle.dump((self.W_in,self.W,self.W_fb,self.W_out), f)
+		f.close()
+	def load(self, filename):
+		import pickle
+		f=open(filename,"rb")
+		self.W_in,self.W,self.W_fb,self.W_out  = pickle.load(f)
+		f.close()
+	    
+
 	# def run(self,):
+
 
 	# 	def compute_stateR(u, state_tm1,  W, W_in, W_fb, W_out):
 	# 		#t-1

@@ -27,9 +27,9 @@ ws = SocketIO(app)
 # cs = SocketIO()
 ann = None
 xbee = None
-status = ['a','b','c','d','e','f']
-xbee_motors_on = ['A','B','C','D','E','F']
-xbee_motors_off = ['a','b','c','d','e','f']
+status = ['a','b','c','d','e','f','p','r','l']
+xbee_motors_on = ['A','B','C','D','E','F','P','R','L']
+xbee_motors_off = ['a','b','c','d','e','f','p','r','l']
 thread = None
 music = None
 music_thread = None
@@ -154,7 +154,7 @@ def bg_ann_ctrl(socket_data):
     if socket_data['from'] == "xbee":
         if socket_data['data'] != None and ann is not None:
             #received sensors, norm between [0,1]
-            normed = (np.array(socket_data['data'])-6)/250.
+            normed = (np.array(socket_data['data']))/550.
             sen = (normed*2.)-1.
             print sen
             state, output = ann.serv_step(sen)
@@ -320,14 +320,16 @@ def bg_xbee_ctrl(socket_data):
             #received sensors
             print "XBEE:: ann com"#, socket_data['data']
             #send data to the xbee
-            nsat = ['a','b','c','d','e','f']
             if xbee is not None:
                 for idx,value in enumerate(socket_data['data'][0]):
                     print "\t motor val:", value, " |id:",idx," ", xbee_motors_on[idx]
-                    if value >= 0.0:
+                    #only send when changed
+                    if value >= 0.0 and status[idx]!=xbee_motors_on[idx]:
                         xbee.SendStr(xbee_motors_on[idx])
-                    else:
+                    elif value < 0.0 and status[idx]!=xbee_motors_on[idx]:
                         xbee.SendStr(xbee_motors_off[idx])
+                    else:
+                        print "ANN:: Nothing to change"
 
         else:
             #invalid
