@@ -22,10 +22,10 @@ right *= 2.
 right -=1.
 right = [val for val in right for _ in range(4)]
 right = np.array(right)
-turn_right = np.zeros(right.shape)-.9
-turn_right[25:100,4] = .9
-turn_right[40:100,0] = .9 
-turn_right[100:,2] = .9
+turn_right = np.zeros(right.shape)-.49
+turn_right[25:100,4] = .49
+turn_right[40:100,0] = .49 
+turn_right[100:,2] = .49
 print turn_right.shape
 #(25,100),(100,152)
 
@@ -35,10 +35,10 @@ left *= 2.
 left -=1.
 left = [val for val in left for _ in range(4)]
 left = np.array(left)
-turn_left = np.zeros(left.shape)-.9
-turn_left[30:70,5] = .9 
-turn_left[35:70,1] = .9
-turn_left[70:,2] = .9
+turn_left = np.zeros(left.shape)-.49
+turn_left[30:70,5] = .49 
+turn_left[35:70,1] = .49
+turn_left[70:,2] = .49
 print turn_left.shape
 #30,70 70,112
 
@@ -48,9 +48,9 @@ nothing *= 2.
 nothing -=1.
 nothing = [val for val in nothing for _ in range(4)]
 nothing = np.array(nothing)
-do_nothing = np.zeros(nothing.shape)-.9
-do_nothing[400:600,4] = .9
-do_nothing[400:600,1] = .9
+do_nothing = np.zeros(nothing.shape)-.49
+do_nothing[400:600,4] = .49
+do_nothing[400:600,1] = .49
 print do_nothing.shape
 
 #400,600
@@ -102,7 +102,7 @@ plt.plot(inputs)
 plt.figure()
 plt.plot(output)
 
-# plt.show()
+plt.show()
 
 import pickle
 f= open("dataset.pickle","wb")
@@ -122,3 +122,8 @@ f.close()
 # plt.figure()
 # plt.plot(nothing)
 # plt.plot(do_nothing)
+# plt.figure()
+# plt.plot(inputs)
+# plt.figure()
+# plt.plot(output)
+# plt.show()

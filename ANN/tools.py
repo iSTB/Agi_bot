@@ -133,9 +133,9 @@ def read_dataset(dirname, extension):
             # save and close
             f.close()
     return returnables
-def createPad(size):
+def createPad(size,lin_size=20):
     padding = []
-    lin_size = 20
+    
     
     lnspace = np.linspace(np.pi, -lin_size*np.pi, size, False)
     for _ in xrange( 6):

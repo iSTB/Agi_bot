@@ -24,7 +24,7 @@ class serv_ESN():
 			)
 		
 		# self.webapp = webapp
-		
+		self.esn.load("trainied.pickle")
 		self.stepper = self.esn.step_taped()
 		self.outputs = np.zeros((3,outdim))
 		print "ESN:: init"
