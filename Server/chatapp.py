@@ -12,6 +12,7 @@ from flask.ext.socketio import SocketIO, emit
 from Agi_bot.ANN.serv_ESN import serv_ESN 
 from Agi_bot.Sampler.player import player 
 from Agi_bot.XBEE.XBee_Threaded import XBee 
+from Agi_bot.neat.evole import neat as NEAT 
 #os
 from datetime import datetime
 import os
@@ -33,6 +34,8 @@ xbee_motors_off = ['a','b','c','d','e','f','p','r','l']
 thread = None
 music = None
 music_thread = None
+ai = None
+ai_thread = None
 
 
 @app.route('/')
@@ -150,16 +153,21 @@ def xbee_contorl(data):
 @ws.on('ann', namespace='/control_background')
 def bg_ann_ctrl(socket_data):
     global ann
+    global ai
+    global ai_thread
     #from who
     if socket_data['from'] == "xbee":
         if socket_data['data'] != None and ann is not None:
             #received sensors, norm between [0,1]
             normed = (np.array(socket_data['data']))/550.
             sen = (normed*2.)-1.
-            print sen
             state, output = ann.serv_step(sen)
             state = state.tolist()
             output = output.tolist()
+            print "SENSE:: ",list(normed[0])
+            ai.set_sensors(list(normed[0]))
+            motor_command = ai.get_motor(list(normed[0]))
+            # print motor_command
             package = {
                 "from": "ann",
                 "data": state
@@ -170,7 +178,7 @@ def bg_ann_ctrl(socket_data):
                 namespace="/control_background")
             package = {
                 "from": "ann",
-                "data": output
+                "data": motor_command#output#
                 }
             emit(
                 "xbee",
@@ -202,9 +210,22 @@ def bg_ann_ctrl(socket_data):
     elif socket_data['from'] == "front":
         if socket_data['data'] == "init" and ann == None:
             ann = serv_ESN()
+            ai = NEAT()
+            @flask.copy_current_request_context            
+            def ai_thrd():
+                while ai_thread is not None:
+                    ai.run()
+                    sleep(0.5)
+            if ai_thread is None:
+                ai_thread = Thread(target=ai_thrd)
+                ai_thread.start()
+
             print "ANN:: from front init"
         elif socket_data['data'] == "close" and ann != None:
             ann = None
+            ai = None
+            ai_thread.join(1)
+            ai_thread = None
             print "ANN:: from front close"
         else:
             # print socket_data
@@ -321,12 +342,14 @@ def bg_xbee_ctrl(socket_data):
             print "XBEE:: ann com"#, socket_data['data']
             #send data to the xbee
             if xbee is not None:
+                print "NET OUT:: ",np.argmax(socket_data['data'][0])
                 max_id = np.argmax(socket_data['data'][0])
-                #check if two are on
-                idz = [ i if xbee_motors_on[max_id] in v for i,v in enumerate(status)]
-                if idz:
-                    status[idz] = xbee_motors_off[max_id] 
-                    xbee.SendStr(status[idz])
+                #check wahts on close it
+                for i,v in enumerate(xbee_motors_on):
+                    if v == status[i]:
+                        status[i] = xbee_motors_off[i]
+                        xbee.SendStr(status[i])
+                #turn max on 
                 status[max_id] = xbee_motors_on[max_id]
                 xbee.SendStr(status[max_id])
                 # for idx,value in enumerate(socket_data['data'][0]):
@@ -381,7 +404,7 @@ def bg_xbee_ctrl(socket_data):
                         try:
                             xbee.SendStr('0')
                             msg = xbee.Receive()
-                            # print "MSG ",msg
+                            print "MSG ",msg
                         except Exception:
                             break
                         if msg:

@@ -3,7 +3,7 @@ import os
 from neat import population
 from neat.config import Config
 from neat.nn import nn_pure as nn
-
+from time import sleep
 class neat(object):
 
 
@@ -12,14 +12,20 @@ class neat(object):
         self.sensor_values = None
         self.change = False
     def get_motor(self,sensors):
-
+        print sensors
         if self.current_nn != None: 
-            return self.current_nn.sactivate(sensors)
+            v = self.current_nn.sactivate(sensors)
+            # bin_size = 1/9.
+            # val = round(v/bin_size)
+            # ret = [0]*9
+            # ret[val] = 1
+
+            return v
 
     def set_sensors(self,senors):
-        self.sensors_values = sensor_values
+        self.sensors_values = senors
     
-    def fit_func(sensors_before, sensors_after):
+    def fit_func(self,sensors_before, sensors_after):
 
         min_sensor, min_index = min((val, idx) for (idx, val) in enumerate(sensors_before) if idx != 0)
 
@@ -38,21 +44,23 @@ class neat(object):
     def eval_fitness(self,genomes):
         for g in genomes:
             net = nn.create_fast_feedforward_phenotype(g)
-            self.curr_nn = net
+            self.current_nn = net
 
-            start_sensors  = self.current_sensors  #this will be the current sensors from the robot
+            start_sensors  = self.sensor_values  #this will be the current sensors from the robot
             
             ##LET ROBOT RUN HERE
+            # eat da poop pooo
+            sleep(120)
 
-            finish_sensors = self.current_sensors
-            g.fitness = fit_func(curr_sensors,after_sensors) 
+            finish_sensors = self.sensor_values
+            g.fitness = self.fit_func(start_sensors,finish_sensors) 
 
     def run(self):
         local_dir = os.path.dirname(__file__)
         config = Config(os.path.join(local_dir, 'evolve_config'))
 
         pop = population.Population(config)
-        pop.epoch(eval_fitness, 300)
+        pop.epoch(self.eval_fitness, 300)
 
 
         winner = pop.most_fit_genomes[-1]
