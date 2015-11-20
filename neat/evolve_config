@@ -1,0 +1,51 @@
+#--- parameters for the XOR-2 experiment ---#
+# Stats for 5000 runs:
+#                mean    stdev
+#  Generations: 37.033  47.774
+# hidden nodes:  2.993   1.909
+#  connections: 10.493   4.482
+#      enabled:  8.801   3.673
+
+[phenotype]
+input_nodes         = 6
+output_nodes        = 7
+fully_connected     = 1
+max_weight          = 30
+min_weight          = -30
+feedforward         = 1
+nn_activation       = exp
+hidden_nodes        = 10
+weight_stdev        = 0.9
+
+[genetic]
+pop_size              = 20
+max_fitness_threshold = 1.0
+prob_addconn          = 0.05
+prob_addnode          = 0.05
+prob_deleteconn       = 0.01
+prob_deletenode       = 0.01
+prob_mutatebias       = 0.5
+bias_mutation_power   = 0.5
+prob_mutate_response  = 0.5
+response_mutation_power = 0.5
+prob_mutate_weight    = 0.9
+prob_replace_weight   = 0.1
+weight_mutation_power = 1.5
+prob_togglelink       = 0.01
+elitism               = 1
+
+[genotype compatibility]
+compatibility_threshold = 3.0
+compatibility_change    = 0.0
+excess_coefficient      = 1.0
+disjoint_coefficient    = 1.0
+weight_coefficient      = 0.4
+
+[species]
+species_size        = 10
+survival_threshold  = 0.2
+old_threshold       = 30
+youth_threshold     = 10
+old_penalty         = 0.2
+youth_boost         = 1.2
+max_stagnation      = 15
