@@ -321,15 +321,23 @@ def bg_xbee_ctrl(socket_data):
             print "XBEE:: ann com"#, socket_data['data']
             #send data to the xbee
             if xbee is not None:
-                for idx,value in enumerate(socket_data['data'][0]):
-                    print "\t motor val:", value, " |id:",idx," ", xbee_motors_on[idx]
-                    #only send when changed
-                    if value >= 0.0 and status[idx]!=xbee_motors_on[idx]:
-                        xbee.SendStr(xbee_motors_on[idx])
-                    elif value < 0.0 and status[idx]!=xbee_motors_on[idx]:
-                        xbee.SendStr(xbee_motors_off[idx])
-                    else:
-                        print "ANN:: Nothing to change"
+                max_id = np.argmax(socket_data['data'][0])
+                #check if two are on
+                idz = [ i if xbee_motors_on[max_id] in v for i,v in enumerate(status)]
+                if idz:
+                    status[idz] = xbee_motors_off[max_id] 
+                    xbee.SendStr(status[idz])
+                status[max_id] = xbee_motors_on[max_id]
+                xbee.SendStr(status[max_id])
+                # for idx,value in enumerate(socket_data['data'][0]):
+                #     print "\t motor val:", value, " |id:",idx," ", xbee_motors_on[idx]
+                #     #only send when changed
+                #     if value >= 0.0 and status[idx]!=xbee_motors_on[idx]:
+                #         xbee.SendStr(xbee_motors_on[idx])
+                #     elif value < 0.0 and status[idx]!=xbee_motors_off[idx]:
+                #         xbee.SendStr(xbee_motors_off[idx])
+                #     else:
+                #         print "ANN:: Nothing to change"
 
         else:
             #invalid
