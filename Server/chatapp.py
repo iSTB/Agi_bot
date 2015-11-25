@@ -28,9 +28,9 @@ ws = SocketIO(app)
 # cs = SocketIO()
 ann = None
 xbee = None
-status = ['a','b','c','d','e','f','p','r','l']
-xbee_motors_on = ['A','B','C','D','E','F','P','R','L']
-xbee_motors_off = ['a','b','c','d','e','f','p','r','l']
+status = [['a'],['b','r'],['c','s'],['d'],['e','l'],['f']]
+xbee_motors_on = [['A'],['B','R'],['C','P'],['D'],['E','L'],['F']]
+xbee_motors_off = [['a'],['b','r'],['c','s'],['d'],['e','l'],['f']]
 thread = None
 music = None
 music_thread = None
@@ -346,12 +346,14 @@ def bg_xbee_ctrl(socket_data):
                 max_id = np.argmax(socket_data['data'][0])
                 #check wahts on close it
                 for i,v in enumerate(xbee_motors_on):
-                    if v == status[i]:
+                    if v == status[i] and i != max_id:
                         status[i] = xbee_motors_off[i]
-                        xbee.SendStr(status[i])
+                        for val in status[i]:
+                            xbee.SendStr(val)
                 #turn max on 
                 status[max_id] = xbee_motors_on[max_id]
-                xbee.SendStr(status[max_id])
+                for val in status[max_id]:
+                    xbee.SendStr(val)
                 # for idx,value in enumerate(socket_data['data'][0]):
                 #     print "\t motor val:", value, " |id:",idx," ", xbee_motors_on[idx]
                 #     #only send when changed
@@ -421,7 +423,7 @@ def bg_xbee_ctrl(socket_data):
                                 package,
                                 namespace='/control_background'
                                 )
-                        sleep(0.5)
+                        sleep(30)
 
             if thread is None:
                 thread = Thread(target=xbee_thread)
