@@ -14,7 +14,7 @@ class player(object):
         self.act_av = 0.0 #stores average activation of nerurons
         self.act_std = 0.0 # stores the standard devarion of the activation neruons 
         self.last_played = {}
-        self.refactory = 30
+        self.refactory = 15
         self.threshold = 0.0 
 
 
@@ -22,12 +22,13 @@ class player(object):
         self.nn_state = nn
         self.av = np.average(self.nn_state.values())
         self.std = np.std(self.nn_state.values())
-        self.threshold = self.av + self.std*(1.25)
+        self.threshold = self.av + self.std
 
         n_neurons = len(self.nn_state.values())
         n_sounds = len(self.sounds.values())
     
         if n_neurons > n_sounds: # case when we have more neurons than sounds
+            print "here"
             for i in range(n_sounds,n_neurons):
                 self.add_sound(i,self.sounds.values()[i % n_sounds].path)
     def play(self):
