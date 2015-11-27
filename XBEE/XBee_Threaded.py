@@ -20,6 +20,7 @@ class XBee(threading.Thread):
 
     def shutdown(self):
         self.stop.set()
+        # self.serial.close()
         self.join(1)
 
     def run(self):
@@ -47,12 +48,12 @@ class XBee(threading.Thread):
          is received, calles Parse() to verify it is a properly
          formatted XBee API message.
         """
+        # print self.serial.readline()
         if self.serial.inWaiting():
             self.rxbuff = self.serial.readline()
             msg = self.rxbuff.decode("utf-8")
             try:
                 msg = [int(x) for x in msg.split(",")]
-                # print msg
                 if len(msg) == 6 or len(msg)==1:
                     #we have a proper responce
                     self.RxQ.put(msg)

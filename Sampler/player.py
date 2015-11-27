@@ -14,7 +14,7 @@ class player(object):
         self.act_av = 0.0 #stores average activation of nerurons
         self.act_std = 0.0 # stores the standard devarion of the activation neruons 
         self.last_played = {}
-        self.refactory = 30
+        self.refactory = 90
         self.threshold = 0.0 
 
 
@@ -85,7 +85,7 @@ if __name__=="__main__":
 
     while True:
 
-        p.update_state(make_random_nn(n_sounds+100))
+        p.update_state(make_random_nn(n_sounds+600))
         p.play()
         print p.sounds
         

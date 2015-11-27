@@ -2,7 +2,7 @@
 # from wave import open as waveOpen
 # import pyaudio
 import subprocess
-
+import time
 class sample(object):
 
 
@@ -62,5 +62,5 @@ class sample(object):
 	"""	
 	def play(self):
 		# print self.path
-		p = subprocess.Popen(['mpg123','-q', self.path])		
-		
+		p = subprocess.Popen(['mpg123','-q',self.path])		
+		time.sleep(1.5)

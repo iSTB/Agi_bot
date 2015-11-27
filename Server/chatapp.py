@@ -13,12 +13,14 @@ from Agi_bot.ANN.serv_ESN import serv_ESN
 from Agi_bot.Sampler.player import player 
 from Agi_bot.XBEE.XBee_Threaded import XBee 
 from Agi_bot.neat.evole import neat as NEAT 
+from Agi_bot.drawer.drawer import net_drawer
 #os
 from datetime import datetime
-import os
+import os, sys
 import numpy as np
-from time import sleep
+from time import sleep,time
 from threading import Thread
+import subprocess
 
 
 
@@ -29,13 +31,28 @@ ws = SocketIO(app)
 ann = None
 xbee = None
 status = [['a'],['b','r'],['c','s'],['d'],['e','l'],['f']]
-xbee_motors_on = [['A'],['B','R'],['C','P'],['D'],['E','L'],['F']]
+xbee_motors_on = [['A'],['B'],['C','P'],['D'],['E'],['F']]
 xbee_motors_off = [['a'],['b','r'],['c','s'],['d'],['e','l'],['f']]
 thread = None
 music = None
 music_thread = None
 ai = None
 ai_thread = None
+draw_weights = None
+draw = None
+echo_on = True
+time_to_run = 60*60*3.4
+ai_start = time() 
+
+def check_time(mins = 10):
+    global ai_start
+    global echo_on
+    global time_to_run
+    if time() - ai_start >= time_to_run:
+        # echo_on = not(echo_on)
+        pass
+
+    # if datetime.timedelta(minutes = 10) - 
 
 
 @app.route('/')
@@ -155,22 +172,39 @@ def bg_ann_ctrl(socket_data):
     global ann
     global ai
     global ai_thread
+    global draw
+    global draw_weights
+    global echo_on
+    global time_to_run
     #from who
     if socket_data['from'] == "xbee":
         if socket_data['data'] != None and ann is not None:
-            #received sensors, norm between [0,1]
+            #received sennsors, norm between [0,1]
+            check_time()
+    
             normed = (np.array(socket_data['data']))/550.
             sen = (normed*2.)-1.
             state, output = ann.serv_step(sen)
             state = state.tolist()
             output = output.tolist()
-            print "SENSE:: ",list(normed[0])
-            ai.set_sensors(list(normed[0]))
-            motor_command = ai.get_motor(list(normed[0]))
-            # print motor_command
+            # print "SENSE:: ",list(normed[0])
+            if echo_on:
+                ai.turn_off()
+
+            if not echo_on:
+                print "NEAT ON!"
+                ai.turn_on()
+                print "giving these to neat:",list(normed[0])
+                ai.set_sensors(list(normed[0]))
+                output = [ai.get_motor(list(normed[0]))]
+                print "NEAT OUT",output
+            # print "WHY",len(state[0])#[:-612]
+            
+            draw.update(state[0][:-612])
+                    
             package = {
                 "from": "ann",
-                "data": state
+                "data": [state[0][50:175]]
                 }
             emit(
                 "music",
@@ -178,7 +212,7 @@ def bg_ann_ctrl(socket_data):
                 namespace="/control_background")
             package = {
                 "from": "ann",
-                "data": motor_command#output#
+                "data": output#motor_command#
                 }
             emit(
                 "xbee",
@@ -210,12 +244,16 @@ def bg_ann_ctrl(socket_data):
     elif socket_data['from'] == "front":
         if socket_data['data'] == "init" and ann == None:
             ann = serv_ESN()
+            draw_weights = np.asmatrix(np.asarray(ann.esn.W.get_value())[:-600,:-600])
+            # print draw_weights
+            draw = net_drawer(draw_weights)
             ai = NEAT()
             @flask.copy_current_request_context            
             def ai_thrd():
-                while ai_thread is not None:
-                    ai.run()
-                    sleep(0.5)
+              #  while ai_thread is not None:
+                ai.run()
+
+                #sleep(0.5)
             if ai_thread is None:
                 ai_thread = Thread(target=ai_thrd)
                 ai_thread.start()
@@ -223,9 +261,10 @@ def bg_ann_ctrl(socket_data):
             print "ANN:: from front init"
         elif socket_data['data'] == "close" and ann != None:
             ann = None
-            ai = None
             ai_thread.join(1)
             ai_thread = None
+            ai = None
+            draw.close()
             print "ANN:: from front close"
         else:
             # print socket_data
@@ -258,6 +297,7 @@ def bg_music_ctrl(socket_data):
             state[i] = v
         #print state
         music.update_state(state)
+
         print "MUSIC:: from ann com "#, socket_data['data']
     elif socket_data['from'] == "xbee" and music is not None:
         pass
@@ -266,22 +306,21 @@ def bg_music_ctrl(socket_data):
     elif socket_data['from'] == "front":
         if socket_data['data'] == "init" and music is None:
             music = player()
+            # global music
+            # cur_index = 0
+
+
+            #bio_sounds = os.listdir('../Sampler/Sounds/BIO')
+            conf_sounds = ['../Sampler/Sounds/DRONE SOUNDS/Confident/' + x for x in os.listdir('../Sampler/Sounds/DRONE SOUNDS/Confident')]
+            rel_sounds = ['../Sampler/Sounds/DRONE SOUNDS/Relaxed/' + x for x in os.listdir('../Sampler/Sounds/DRONE SOUNDS/Relaxed')]
+            fear_sounds = ['../Sampler/Sounds/DRONE SOUNDS/Fearful/' + x for x in os.listdir('../Sampler/Sounds/DRONE SOUNDS/Fearful')]
+            all_sounds = conf_sounds +rel_sounds+fear_sounds
+
+            for i,sound in enumerate(all_sounds):                
+                music.add_sound(i,sound)
+                
             @flask.copy_current_request_context            
             def m_thread():
-                global music
-                cur_index = 0
-
-
-                #bio_sounds = os.listdir('../Sampler/Sounds/BIO')
-                conf_sounds = ['../Sampler/Sounds/DRONE SOUNDS/Confident/' + x for x in os.listdir('../Sampler/Sounds/DRONE SOUNDS/Confident')]
-                rel_sounds = ['../Sampler/Sounds/DRONE SOUNDS/Relaxed/' + x for x in os.listdir('../Sampler/Sounds/DRONE SOUNDS/Relaxed')]
-                fear_sounds = ['../Sampler/Sounds/DRONE SOUNDS/Fearful/' + x for x in os.listdir('../Sampler/Sounds/DRONE SOUNDS/Fearful')]
-
-
-                all_sounds = conf_sounds +rel_sounds+fear_sounds
-
-                for i,sound in enumerate(all_sounds):                
-                    music.add_sound(i,sound)
 
 
 
@@ -296,9 +335,10 @@ def bg_music_ctrl(socket_data):
                 while music_thread is not None:
                     try:
                         music.play()
-                    except Exception:
+                    except Exception as e:
+                        print "MUSIC excpetion ",e
                         break
-                    sleep(1)
+                    sleep(2)
 
             if music_thread is None:
                 music_thread = Thread(target=m_thread)
@@ -309,6 +349,8 @@ def bg_music_ctrl(socket_data):
             music = None
             music_thread.join(1)
             music_thread = None
+            p = subprocess.Popen(['pkill','mpg123'])     
+
             return True
         else:
             emit(
@@ -350,10 +392,12 @@ def bg_xbee_ctrl(socket_data):
                         status[i] = xbee_motors_off[i]
                         for val in status[i]:
                             xbee.SendStr(val)
+                            # pass
                 #turn max on 
                 status[max_id] = xbee_motors_on[max_id]
                 for val in status[max_id]:
                     xbee.SendStr(val)
+                    # pass
                 # for idx,value in enumerate(socket_data['data'][0]):
                 #     print "\t motor val:", value, " |id:",idx," ", xbee_motors_on[idx]
                 #     #only send when changed
@@ -392,9 +436,16 @@ def bg_xbee_ctrl(socket_data):
 
         pass
     elif socket_data['from'] == "front":
-        if socket_data['data'] == "init" and xbee == None and ann != None:
+        if socket_data['data'] == "init" and ann != None:
             # xbee = 1
-            xbee = XBee("/dev/ttyUSB0")
+            print "1"
+            if xbee == None:
+                xbee = XBee("/dev/ttyUSB0")
+                # xbee = 1
+            else:
+                pass
+                # return True
+            print xbee
             #xbee.run()
             @flask.copy_current_request_context
             def xbee_thread():
@@ -402,28 +453,30 @@ def bg_xbee_ctrl(socket_data):
                     # sleep(1)
                     #send msg
                     msg = None
-                    while msg is None:
-                        try:
-                            xbee.SendStr('0')
-                            msg = xbee.Receive()
-                            print "MSG ",msg
-                        except Exception:
-                            break
-                        if msg:
-                            if len(msg) == 1:
-                                #we have a signle digit response
-                                continue
-                            package = {
-                                "from":"xbee",
-                                "data": [msg]
-                                }
+                    # while msg is None:
+                    try:
+                        xbee.SendStr('0')
+                        msg = xbee.Receive()
+                        # msg = np.random.random(6).tolist()
+                        print "MSG ",msg
+                    except Exception as e:
+                        print e
+                        break
+                    if msg:
+                        if len(msg) == 1:
+                            #we have a signle digit response
+                            continue
+                        package = {
+                            "from":"xbee",
+                            "data": [msg]
+                            }
 
-                            emit(
-                                'ann',
-                                package,
-                                namespace='/control_background'
-                                )
-                        sleep(30)
+                        emit(
+                            'ann',
+                            package,
+                            namespace='/control_background'
+                            )
+                    sleep(10)
 
             if thread is None:
                 thread = Thread(target=xbee_thread)
@@ -431,13 +484,19 @@ def bg_xbee_ctrl(socket_data):
             print "XBEE:: front com init"
             return True
         elif socket_data['data'] == "close" and xbee != None:
-            thread.join(1)
-            thread = None
+            if thread is not None:
+                thread.join(1)
+                thread = None
             for _ in xrange(5):
                 xbee.SendStr('1')
+                xbee.SendStr('s')
                 sleep(0.5)
-            xbee.shutdown()
-            xbee = None        
+            '''
+            # xbee.shutdown()
+            # xbee.stop()
+            # xbee.join(2)
+            # xbee = None        
+            '''
             print "XBEE:: front com close"
             return True
         elif socket_data['data'] == "emit" and xbee != None:
@@ -464,4 +523,13 @@ def bg_xbee_ctrl(socket_data):
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 3001))
-    ws.run(app, host='0.0.0.0', port=port)
+    try:
+        ws.run(app, host='0.0.0.0', port=port)
+    except KeyboardInterrupt:
+        print "FORCE "
+        thread.join(1)
+        ai_thread.join(1)
+        music_thread.join(1)
+        xbee_thread.join(1)
+        draw.close()
+        sys.exit(1)
